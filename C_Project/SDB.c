@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "SDB.h"
+#include "cmd_helper.h"
+#include <string.h>
+#include <time.h>
 
 typedef enum
 {
@@ -15,20 +18,46 @@ typedef enum
 
 boolean SDB_IsFull()
 {
-    return db.currentStudentCount == 0;
+    return db.currentStudentCount == MAX_STUDENT_COUNT;
 }
 uint8 SDB_GetUsedSize()
 {
     return db.currentStudentCount;
 }
-void InputCourse(int courseNum, int *courseId, int *courseGrade)
+void InputCourse(int courseNum, Course *course)
 {
+    int id = 0;
+    do
+    {
+        printf("Enter Course %d ID (NOT ZERO): ", courseNum);
+        char *idStr = GetString();
+        id = atoi(idStr);
+    } while (id <= 0);
+    course->ID = id;
+    int grade = 0;
+    do
+    {
+        printf("Enter Course %d Grade (NOT ZERO): ", courseNum);
+        char *gradeStr = GetString();
+        grade = atoi(gradeStr);
+    } while (grade <= 0);
+    course->Grade = grade;
+}
+int GetStudentYear()
+{
+    time_t t = time(NULL);
+    struct tm *localTime = localtime(&t);
+    int currentYear = localTime->tm_year + 1900;
 
-    printf("Enter Course %d ID: ", courseNum);
-    scanf("%d", courseId);
+    int year = 0;
+    do
+    {
+        printf("Enter Student Year (YYYY >= 2000): ");
+        char *yearStr = GetString();
+        year = atoi(yearStr);
+    } while (year <= 0 || year > currentYear || year < MIN_YEAR);
 
-    printf("Enter Course %d Grade: ", courseNum);
-    scanf("%d", courseGrade);
+    return year;
 }
 boolean SDB_AddEntry()
 {
@@ -39,12 +68,21 @@ boolean SDB_AddEntry()
 
     Student student;
 
-    printf("Enter Student ID: ");
-    scanf("%d", &student.Student_ID);
+    int studentId = 0;
+    do
+    {
+        printf("Enter Student Id: ");
+        char *studentIdStr = GetString();
+        studentId = atoi(studentIdStr);
+    } while (studentId <= 0);
+    student.Student_ID = studentId;
 
-    InputCourse(1, &student.Course1_ID, &student.Course1_grade);
-    InputCourse(2, &student.Course2_ID, &student.Course2_grade);
-    InputCourse(3, &student.Course3_ID, &student.Course3_grade);
+    student.Student_year = GetStudentYear();
+
+    for (int i = 0; i < MAX_COURSES; i++)
+    {
+        InputCourse(i + 1, &student.courses[i]);
+    }
 
     db.students[db.currentStudentCount] = student;
     db.currentStudentCount++;
@@ -53,6 +91,8 @@ boolean SDB_AddEntry()
 }
 void SDB_DeleteEntry(uint32 id)
 {
+    if (SDB_GetUsedSize() == 0)
+        return;
     for (int i = 0; i < db.currentStudentCount; i++)
     {
         if (db.students[i].Student_ID == id)
@@ -61,15 +101,18 @@ void SDB_DeleteEntry(uint32 id)
             {
                 db.students[j] = db.students[j + 1];
             }
+            db.currentStudentCount--;
         }
     }
 }
 void PrintStudent(const Student *const s)
 {
     printf("Student_ID: %d\n", s->Student_ID);
-    printf("Course1 (Id,Grade): (%d, %d)\n", s->Course1_ID, s->Course1_grade);
-    printf("Course2 (Id,Grade): (%d, %d)\n", s->Course2_ID, s->Course2_grade);
-    printf("Course3 (Id,Grade): (%d, %d)\n", s->Course3_ID, s->Course3_grade);
+    printf("Student Year: %d", s->Student_year);
+    for (int i = 0; i < MAX_COURSES; i++)
+    {
+        printf("Course(%d) (Id,Grade): (%d, %d)\n", i + 1, s->courses[i].ID, s->courses[i].Grade);
+    }
 }
 boolean SDB_ReadEntry(uint32 id)
 {
@@ -106,6 +149,7 @@ boolean SDB_IsIdExist(uint32 id)
 
 static void PrintMenu()
 {
+    PrintMenuTitle("MAIN MENU");
     printf("1) ADD STUDENT\n");
     printf("2) READ STUDENT\n");
     printf("3) READ ALL STUDENTS\n");
@@ -119,37 +163,20 @@ static MenuOption GetMenuOption()
     do
     {
         printf("Enter menu option (%d,%d): ", MENU_OPTION_ADD_STUDENT + 1, MENU_OPTION_END);
-        scanf("%d", &result);
+        char *menuOptionStr = GetString();
+        result = atoi(menuOptionStr);
         result--;
     } while (result < MENU_OPTION_ADD_STUDENT || result >= MENU_OPTION_END);
+
     return (MenuOption)result;
 }
 
-void ClearBuffer()
-{
-    char c = getchar();
-    while (c != '\n' && c != EOF)
-        c = getchar();
-}
-void PressEnterToContinue()
-{
-    ClearBuffer();
-    printf("Press Enter to Continue...\n");
-    char c = getchar();
-    while (c != '\n')
-        c = getchar();
-}
-void ClearScreen()
-{
-#ifdef _WIN32
-    system("cls");
-#else
-    system("clear")
-#endif
-}
 void SDB_App()
 {
     MenuOption menuOption = MENU_OPTION_END;
+    ClearScreen();
+    PrintMenuTitle("Welcome to AMIT PROJECT C");
+    PressEnterToContinue();
     ClearScreen();
     do
     {
@@ -160,60 +187,120 @@ void SDB_App()
         ClearScreen();
     } while (menuOption != MENU_OPTION_EXIT);
 }
-
-void Menu_AddStudent()
+boolean DisplayNoStudentsWarning()
 {
-    boolean result = SDB_AddEntry();
-    printf((result ? "Student Added Successfuly\n" : "Failed to Add student\n"));
-}
-void Menu_DeleteStudent()
-{
-    printf("Enter student's id to delete or -1 to go back: ");
-    int id;
-    scanf("%d", &id);
-    if (id >= 0)
-        SDB_DeleteEntry(id);
-
-    return;
-}
-
-void Menu_FindStudent()
-{
-    printf("Enter student's id: ");
-    int id;
-    scanf("%d", &id);
-    if (id >= 0)
-        printf(((SDB_IsIdExist(id)) ? "Student Exists\n" : "Student Not Available\n"));
-
-    return;
-}
-void Menu_ReadStudent()
-{
-    printf("Enter student's id: ");
-    int id;
-    scanf("%d", &id);
-    if (id >= 0)
+    if (SDB_GetUsedSize() == 0)
     {
-        boolean result = SDB_ReadEntry(id);
-        if (!result)
-        {
-            printf("No student found with ID: %d\n", id);
-        }
+        printf("No Students currently in DB\n");
+        return TRUE;
     }
-    return;
+    return FALSE;
 }
-
-void Menu_ReadAllStudents()
+void DisplayAllStudentsId()
 {
+    if (DisplayNoStudentsWarning())
+    {
+        return;
+    }
     uint32 idBuffer[MAX_STUDENT_COUNT];
     uint8 idBufferCount = 0;
 
     SDB_GetList(&idBufferCount, (uint32 *)idBuffer);
     for (int i = 0; i < idBufferCount; i++)
     {
-        SDB_ReadEntry(idBuffer[i]);
+        printf("%d - %d\n", i + 1, idBuffer[i]);
     }
-    return;
+}
+void Menu_AddStudent()
+{
+    boolean result = SDB_AddEntry();
+    printf((result ? "Student Added Successfuly\n" : "Failed to Add student\n"));
+}
+
+void Menu_DeleteStudent()
+{
+    if (DisplayNoStudentsWarning())
+    {
+        return;
+    }
+    DisplayAllStudentsId();
+    int id;
+    do
+    {
+        printf("Enter student's id to delete or -1 to go back: ");
+        char *idStr = GetString();
+        id = atoi(idStr);
+        if(id == -1)
+            return;
+    } while ((id <= 0));
+
+    SDB_DeleteEntry(id);
+}
+
+void Menu_FindStudent()
+{
+    if (DisplayNoStudentsWarning())
+    {
+        return;
+    }
+    DisplayAllStudentsId();
+    printf("Enter student's id: ");
+    int id;
+    do
+    {
+        printf("Enter student's id to delete or -1 to go back: ");
+        char *idStr = GetString();
+        id = atoi(idStr);
+        if(id == -1)
+            return;
+    } while ((id <= 0));
+
+    printf(((SDB_IsIdExist(id)) ? "Student Exists\n" : "Student Not Available\n"));
+}
+void Menu_ReadStudent()
+{
+    if (DisplayNoStudentsWarning())
+    {
+        return;
+    }
+    DisplayAllStudentsId();
+    printf("Enter student's id: ");
+
+    int id;
+    do
+    {
+        printf("Enter student's id to delete or -1 to go back: ");
+        char *idStr = GetString();
+        id = atoi(idStr);
+        if(id == -1)
+            return;
+    } while ((id <= 0));
+    printf("\n");
+    boolean result = SDB_ReadEntry(id);
+    printf("\n");
+    if (!result)
+    {
+        printf("No student found with ID: %d\n", id);
+    }
+}
+
+void Menu_ReadAllStudents()
+{
+    if (DisplayNoStudentsWarning())
+    {
+        return;
+    }
+    uint32 idBuffer[MAX_STUDENT_COUNT];
+    uint8 idBufferCount = 0;
+
+    SDB_GetList(&idBufferCount, (uint32 *)idBuffer);
+    printf("\nStudents: %d\n", SDB_GetUsedSize());
+    printf("========================================================================\n");
+    for (int i = 0; i < idBufferCount; i++)
+    {
+        SDB_ReadEntry(idBuffer[i]);
+        printf("========================================================================\n");
+    }
 }
 
 void SDB_Action(uint8 choice)
@@ -235,6 +322,9 @@ void SDB_Action(uint8 choice)
         break;
     case MENU_OPTION_READ_ALL_STUDENTS:
         Menu_ReadAllStudents();
+        break;
+    case MENU_OPTION_EXIT:
+        printf("Thanks for trying our app.\n");
         break;
     default:
         printf("Invalid Action Requested ID: %d\n", choice);
