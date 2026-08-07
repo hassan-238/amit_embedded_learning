@@ -1,1 +1,0 @@
-gcc main.c linked_list.c dynamic_array.c queue.c stack.c -o app

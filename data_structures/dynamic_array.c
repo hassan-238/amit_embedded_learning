@@ -2,18 +2,16 @@
 #include <string.h>
 #include "dynamic_array.h"
 
-DynamicArray DynamicArray_Create(size_t initialCapacity)
+DataStructureResult DynamicArray_Create(size_t initialCapacity,DynamicArray* arr)
 {
-    DynamicArray arr;
-   
     size_t capacity = 2;
     while(initialCapacity > capacity)
     {
         capacity *= 2;
     }
-    arr.capacity = capacity;
-    arr.data = malloc(sizeof(arr.data[0]) * arr.capacity);
-    arr.length = 0;
+    arr->capacity = capacity;
+    arr->data = malloc(sizeof(arr->data[0]) * arr->capacity);
+    arr->length = 0;
     return arr;
 }
 void DynamicArray_Add(DynamicArray* arr,int element)

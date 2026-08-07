@@ -47,7 +47,48 @@ void InsertionSort(int *data, int size, int orderAsc)
     }
 }
 
-void MergeSort(int* data, int size, int orderAsc);
+void MergeSort(int* data, int size, int orderAsc)
+{   
+    if(size <= 1)
+        return;
+    int center = (size)/2;
+    int centerNum = data[center];
+    for(int i = 0; i < center;i++)
+    {
+        while((data[i] > centerNum && orderAsc) || (data[i] < centerNum && !orderAsc))
+        {
+            int num = data[i];
+            for(int j = i;j < center; j++)
+            {
+                data[j] = data[j+1];
+            }
+            data[center] = num;
+            center--;
+        }
+    }
+    
+    for(int i = center+1; i < size;i++)
+    {
+        while((data[i] < centerNum && orderAsc) || (data[i] > centerNum && !orderAsc))
+        {
+            int num = data[i];
+            for(int j = i; j > center; j--)
+            {
+                data[j] = data[j-1];
+            }
+            data[center] = num;
+            center++;
+        }
+    }
+    printf("[");
+    for(int i = 0;i<size;i++)
+    {
+        printf("%d ",data[i]);
+    }
+    printf("] %d %d %p\n",center,size,data);
+    MergeSort(data,center,orderAsc);
+    MergeSort(data+center+1,size-center,orderAsc);
+}
 
 void HeapSort(int* data, int size, int orderAsc);
 #endif

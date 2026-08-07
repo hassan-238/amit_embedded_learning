@@ -4,7 +4,7 @@
 #define SET_BIT(reg, bit) (reg |= (1 << bit))
 #define CLR_BIT(reg, bit) (reg &= (~(1 << bit))) // change to zero
 #define TOG_BIT(reg, bit) (reg ^= (1 << bit))    // toggle if zero then 1 if 1 then zero
-#define GET_BIT(reg, bit) ((reg >> bit) % 2 == 1)
+#define GET_BIT(reg, bit) ((reg >> bit) & 1)
 
 // 01011111
 // value = x

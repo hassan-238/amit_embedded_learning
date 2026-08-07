@@ -1,0 +1,18 @@
+1- INCLUDE GAURDS
+2- #include<stddef.h> in files that use size_t
+3- Memory management Check the return values of malloc() and realloc()
+4- Use a temporary pointer with realloc() to avoid losing the original allocation if reallocation fails
+5- Review the list-freeing functions, as some implementations leak memory or do not free any nodes. 
+6- Linked-list implementation DoublyNode_Create() is missing a return statement.
+7- Several insertion and deletion functions do not safely handle empty lists or lists containing only one node.
+8- The circular-list free functions have loop conditions that prevent them from executing correctly.
+9- Avoid declaring node pointers as const in functions that modify or free the nodes
+10- Validate indexes before allocating new nodes to prevent memory leaks
+11- Error handling Returning -1 from stack and queue operations is ambiguous because -1 may be a valid stored value
+12- Consider returning a status value such as bool and using an output parameter for the retrieved value.
+13- Invalid-index operations should not return NULL if doing so may cause the caller to lose the original list head
+14- Dynamic array Reset the length and capacity when freeing the array
+15- Use size_t consistently for sizes, indexes, and loop counters
+16- Queue design The current dequeue operation removes the first array element and shifts all remaining elements, resulting in O(n) complexity
+17- A circular-buffer implementation would provide O(1) enqueue and dequeue operations
+18- VOID* OR TYPED MACROS WRAPPERS FOR GENERICS
